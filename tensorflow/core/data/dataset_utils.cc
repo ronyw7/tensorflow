@@ -935,6 +935,7 @@ bool ShouldApplyOptimizations(
 }
 
 int64 GetAutotuneDefaultParallelism(IteratorContext* ctx) {
+  LOG(INFO) << "@lsf Initial autotune parallelism = " << 1;
   return std::min(kAutotuneDefaultParallelism, ctx->runner_threadpool_size());
 }
 
