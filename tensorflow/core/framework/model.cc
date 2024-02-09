@@ -2358,6 +2358,10 @@ void Model::Optimize(AutotuneAlgorithm algorithm,
             << AutotuneAlgorithm_Name(algorithm) << " and CPU budget "
             << optimization_params.cpu_budget() << " and RAM budget "
             << optimization_params.ram_budget() << " bytes";
+
+  std::string debugStr = snapshot->DebugString();
+  LOG(INFO) << "Node snapshot before optimization: " << debugStr;
+
   switch (algorithm) {
     case AutotuneAlgorithm::DEFAULT:
     case AutotuneAlgorithm::MAX_PARALLELISM:
@@ -2496,6 +2500,9 @@ bool Model::ShouldStop(int64_t cpu_budget, int64_t ram_budget,
                        const Model::ModelParameters& buffer_size_parameters,
                        std::shared_ptr<Node> snapshot,
                        bool* cpu_budget_reached) {
+  if (*cpu_budget_reached) {
+     LOG(INFO) << "@ronyw CPU budget reached.";
+  }
   if (!(*cpu_budget_reached)) {
     // If those essential transformations' parallelism reaches the CPU budget,
     // we will only tune the buffer size parameters in future iterations.
@@ -2597,15 +2604,18 @@ void Model::OptimizeGradientDescent(
     std::shared_ptr<Node> snapshot,
     const OptimizationParams& optimization_params,
     CancellationManager* cancellation_manager) {
-  LOG(INFO) << "@ronyw Starting optimization of tunable parameters with Gradient "
-             "Descent.";
+  LOG(INFO) << "@ronyw -- Starting optimization of tunable parameters with Gradient "
+             "Descent. --";
+  std::string debugStr = snapshot->DebugString();
+  LOG(INFO) << "[Gradient Descent] Node debug string: " << debugStr;
   auto parameters = CollectTunableParameters(snapshot);
   if (parameters.empty()) {
-    LOG(INFO) << "@ronyw The Gradient Descent optimization is terminated since no node "
+    LOG(INFO) << "[Gradient Descent] The Gradient Descent optimization is terminated since no node "
                "with tunable parameters has recorded elements.";
     return;
   }
-  LOG(INFO) << "@ronyw [Gradient Descent] Number of tunable parameters: " << parameters.size();
+  LOG(INFO) << "[Gradient Descent] Number of tunable parameters: " << parameters.size();
+
 
   // The vectors of "essential" parallelism parameters and buffer size
   // parameters.
