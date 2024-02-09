@@ -2359,8 +2359,9 @@ void Model::Optimize(AutotuneAlgorithm algorithm,
             << optimization_params.cpu_budget() << " and RAM budget "
             << optimization_params.ram_budget() << " bytes";
 
-  std::string debugStr = snapshot->DebugString();
-  LOG(INFO) << "Node snapshot before optimization: " << debugStr;
+  // @ronyw This doesn't seem necessary
+  // std::string debugStr = snapshot->DebugString();
+  // LOG(INFO) << "Node snapshot before optimization: " << debugStr;
 
   switch (algorithm) {
     case AutotuneAlgorithm::DEFAULT:
@@ -2500,9 +2501,9 @@ bool Model::ShouldStop(int64_t cpu_budget, int64_t ram_budget,
                        const Model::ModelParameters& buffer_size_parameters,
                        std::shared_ptr<Node> snapshot,
                        bool* cpu_budget_reached) {
-  if (*cpu_budget_reached) {
-     LOG(INFO) << "@ronyw CPU budget reached.";
-  }
+  // if (*cpu_budget_reached) {
+  //    LOG(INFO) << "@ronyw CPU budget reached.";
+  // }
   if (!(*cpu_budget_reached)) {
     // If those essential transformations' parallelism reaches the CPU budget,
     // we will only tune the buffer size parameters in future iterations.
@@ -2512,7 +2513,8 @@ bool Model::ShouldStop(int64_t cpu_budget, int64_t ram_budget,
     }
     *cpu_budget_reached = (model_parallelism > cpu_budget);
     if (*cpu_budget_reached) {
-      LOG(INFO) << "@ronyw CPU budget reached with model parallelism: " << model_parallelism;
+      LOG(INFO) << "[Gradient Descent] CPU budget " << cpu_budget;
+      LOG(INFO) << "[Gradient Descent] CPU budget reached, current model parallelism: " << model_parallelism;
     }
   }
 
@@ -2522,12 +2524,12 @@ bool Model::ShouldStop(int64_t cpu_budget, int64_t ram_budget,
   // @ronyw We will log ram_budget while preventing unnecessary TotalMaximumBufferedBytes calls.
 
   if (all_max) {
-    LOG(INFO) << "@ronyw All parameters have reached their maximum values.";
+    LOG(INFO) << "  [Stopping] All parameters have reached their maximum values.";
     return true;
   } else {
     const double buffered_bytes = TotalMaximumBufferedBytes(snapshot);
     if (buffered_bytes > ram_budget) {
-      LOG(INFO) << "RAM budget exceeded. Maximum buffered bytes: "
+      LOG(INFO) << "  [Stopping] RAM budget exceeded. Maximum buffered bytes: "
                 << buffered_bytes;
     }
     return buffered_bytes > ram_budget;
@@ -2606,8 +2608,8 @@ void Model::OptimizeGradientDescent(
     CancellationManager* cancellation_manager) {
   LOG(INFO) << "@ronyw -- Starting optimization of tunable parameters with Gradient "
              "Descent. --";
-  std::string debugStr = snapshot->DebugString();
-  LOG(INFO) << "[Gradient Descent] Node debug string: " << debugStr;
+  // std::string debugStr = snapshot->DebugString();
+  // LOG(INFO) << "[Gradient Descent] Node debug string: " << debugStr;
   auto parameters = CollectTunableParameters(snapshot);
   if (parameters.empty()) {
     LOG(INFO) << "[Gradient Descent] The Gradient Descent optimization is terminated since no node "
