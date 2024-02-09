@@ -935,8 +935,10 @@ bool ShouldApplyOptimizations(
 }
 
 int64 GetAutotuneDefaultParallelism(IteratorContext* ctx) {
-  LOG(INFO) << "@lsf Initial autotune parallelism = " << std::min(kAutotuneDefaultParallelism, ctx->runner_threadpool_size());
-  return std::min(kAutotuneDefaultParallelism, ctx->runner_threadpool_size());
+  // LOG(INFO) << "@lsf Initial autotune parallelism = " << std::min(kAutotuneDefaultParallelism, ctx->runner_threadpool_size());
+  // return std::min(kAutotuneDefaultParallelism, ctx->runner_threadpool_size());
+  LOG(INFO) << "@lsf Initial autotune parallelism = " << 1;
+  return 1;
 }
 
 IteratorContext MakeNestedIteratorContext(IteratorContext* ctx) {
