@@ -235,7 +235,6 @@ bool AreAllParametersMax(const Model::ModelParameters& parameters) {
       LOG(INFO) << "   [Checking] This parameter have NOT reached max value: " << pair.second->name;
       return false;
     }
-    LOG(INFO) << "   [Checking] This parameter have reached max value: " << pair.second->name;
   }
   return true;
 }
@@ -2526,7 +2525,12 @@ bool Model::ShouldStop(int64_t cpu_budget, int64_t ram_budget,
   // @ronyw We will log ram_budget while preventing unnecessary TotalMaximumBufferedBytes calls.
 
   if (all_max) {
-    LOG(INFO) << "  [Stopping] All parameters have reached their maximum values.";
+    if (*cpu_budget_reached) { 
+      LOG(INFO) << "  [Stopping] CPU budget reached and buffer size parameters have reached their maximum values."; 
+    } else {
+      LOG(INFO) << "  [Stopping] All parameters have reached their maximum values."; 
+    } 
+   
     return true;
   } else {
     const double buffered_bytes = TotalMaximumBufferedBytes(snapshot);
