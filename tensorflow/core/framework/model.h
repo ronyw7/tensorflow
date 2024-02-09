@@ -234,7 +234,7 @@ class RamBudgetManager {
   void UpdateBudget(int64_t budget) {
     mutex_lock l(mu_);
     budget_ = budget;
-    VLOG(2) << "Updated ram budget to " << budget;
+    LOG(INFO) << "@ronyw RamBudgetManager Updated ram budget to " << budget;
   }
 
   std::string DebugString() {
