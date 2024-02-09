@@ -2606,8 +2606,8 @@ void Model::OptimizeGradientDescent(
     std::shared_ptr<Node> snapshot,
     const OptimizationParams& optimization_params,
     CancellationManager* cancellation_manager) {
-  LOG(INFO) << "@ronyw -- Starting optimization of tunable parameters with Gradient "
-             "Descent. --";
+  LOG(INFO) << "--- Starting optimization of tunable parameters with Gradient "
+             "Descent. ---";
   // std::string debugStr = snapshot->DebugString();
   // LOG(INFO) << "[Gradient Descent] Node debug string: " << debugStr;
   auto parameters = CollectTunableParameters(snapshot);
