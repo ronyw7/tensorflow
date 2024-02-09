@@ -2433,8 +2433,6 @@ void Model::Optimize(AutotuneAlgorithm algorithm,
       }
     }
   }
-  // Check what information is provided by the ram_budget_manager; 
-  LOG(INFO) << ram_budget_manager.DebugString();
 }
 
 void Model::RemoveNode(std::shared_ptr<Node> node) {
@@ -2771,8 +2769,8 @@ void Model::OptimizeHillClimbHelper(
   } else {
     LOG(INFO) << "@lsf Not updating model because we cannot allocate "
               << TotalMaximumBufferedBytes(snapshot) << " bytes.";
-    LOG(INFO) << "@lsf ram_budget_manager " << ram_budget_manager.DebugString();
   }
+  LOG(INFO) << "@lsf ram_budget_manager " << ram_budget_manager.DebugString();
 }
 void Model::RecordIteratorGapTime(uint64_t duration_usec) {
   mutex_lock l(gap_mu_);
