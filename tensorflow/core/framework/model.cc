@@ -2516,14 +2516,14 @@ bool Model::ShouldStop(int64_t cpu_budget, int64_t ram_budget,
 
   if (all_max) {
     LOG(INFO) << "@ronyw All parameters have reached their maximum values.";
-    return true
+    return true;
   } else {
     const double buffered_bytes = TotalMaximumBufferedBytes(snapshot);
     if (buffered_bytes > ram_budget) {
       LOG(INFO) << "RAM budget exceeded. Maximum buffered bytes: "
                 << buffered_bytes;
     }
-    return buffered_bytes > ram_budget
+    return buffered_bytes > ram_budget;
   }
 
   // If all parameters have reached their maximum values or RAM budget is
