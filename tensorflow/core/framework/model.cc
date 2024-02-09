@@ -232,8 +232,10 @@ std::string RemoveArrayIndices(absl::string_view s) {
 bool AreAllParametersMax(const Model::ModelParameters& parameters) {
   for (const auto& pair : parameters) {
     if (pair.second->value < pair.second->max) {
+      LOG(INFO) << "   [Checking] This parameter have NOT reached max value: " << pair.second->name;
       return false;
     }
+    LOG(INFO) << "   [Checking] This parameter have reached max value: " << pair.second->name;
   }
   return true;
 }
@@ -2508,10 +2510,12 @@ bool Model::ShouldStop(int64_t cpu_budget, int64_t ram_budget,
     int64_t model_parallelism = 0;
     for (auto& pair : parallelism_parameters) {
       model_parallelism += std::round(pair.second->value);
+      // LOG(INFO) << "[Gradient Descent] Pair.second name: " << pair.second->name;
+      // LOG(INFO) << "[Gradient Descent] Pair.second value: " << pair.second->value;
     }
     *cpu_budget_reached = (model_parallelism > cpu_budget);
     if (*cpu_budget_reached) {
-      LOG(INFO) << "[Gradient Descent] CPU budget " << cpu_budget;
+      LOG(INFO) << "[Gradient Descent] CPU budget: " << cpu_budget;
       LOG(INFO) << "[Gradient Descent] CPU budget reached, current model parallelism: " << model_parallelism;
     }
   }
@@ -2772,6 +2776,7 @@ void Model::OptimizeHillClimbHelper(
   }
   LOG(INFO) << "@lsf ram_budget_manager " << ram_budget_manager.DebugString();
 }
+
 void Model::RecordIteratorGapTime(uint64_t duration_usec) {
   mutex_lock l(gap_mu_);
   // Drop duration if it is too large.
