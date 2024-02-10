@@ -234,12 +234,12 @@ class RamBudgetManager {
   void UpdateBudget(int64_t budget) {
     mutex_lock l(mu_);
     budget_ = budget;
-    VLOG(2) << "Updated ram budget to " << budget;
+    LOG(INFO) << "  [RamBudgetManager] Updated ram budget to " << budget;
   }
 
   std::string DebugString() {
     mutex_lock l(mu_);
-    return absl::StrCat("RamBudgetManager: budget_: ", budget_,
+    return absl::StrCat("[RamBudgetManager]: budget_: ", budget_,
                         " prefetch allocated: ", legacy_prefetch_allocated_,
                         " model allocated: ", model_allocated_);
   }

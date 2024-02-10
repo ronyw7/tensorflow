@@ -232,6 +232,7 @@ std::string RemoveArrayIndices(absl::string_view s) {
 bool AreAllParametersMax(const Model::ModelParameters& parameters) {
   for (const auto& pair : parameters) {
     if (pair.second->value < pair.second->max) {
+      LOG(INFO) << "   [Checking] This parameter have NOT reached max value: " << pair.second->name;
       return false;
     }
   }
@@ -2358,6 +2359,11 @@ void Model::Optimize(AutotuneAlgorithm algorithm,
             << AutotuneAlgorithm_Name(algorithm) << " and CPU budget "
             << optimization_params.cpu_budget() << " and RAM budget "
             << optimization_params.ram_budget() << " bytes";
+
+  // @ronyw This doesn't seem necessary
+  // std::string debugStr = snapshot->DebugString();
+  // LOG(INFO) << "Node snapshot before optimization: " << debugStr;
+
   switch (algorithm) {
     case AutotuneAlgorithm::DEFAULT:
     case AutotuneAlgorithm::MAX_PARALLELISM:
@@ -2369,11 +2375,11 @@ void Model::Optimize(AutotuneAlgorithm algorithm,
                         ram_budget_manager);
       break;
     case AutotuneAlgorithm::GRADIENT_DESCENT:
-      LOG(WARNING) << "AutotuneAlgorithm::GRADIENT_DESCENT and prefetch "
-                      "legacy autotuner should not be turned on together"
-                   << "as OptimizeGradientDescent will update state values "
-                      "without consulting ram_budget_manager first."
-                   << "This might cause out-of-memory (OOM)";
+      // LOG(WARNING) << "AutotuneAlgorithm::GRADIENT_DESCENT and prefetch "
+      //                 "legacy autotuner should not be turned on together"
+      //              << "as OptimizeGradientDescent will update state values "
+      //                 "without consulting ram_budget_manager first."
+      //              << "This might cause out-of-memory (OOM)";
       OptimizeGradientDescent(snapshot, optimization_params,
                               cancellation_manager);
       break;
@@ -2428,7 +2434,6 @@ void Model::Optimize(AutotuneAlgorithm algorithm,
       }
     }
   }
-  VLOG(2) << ram_budget_manager.DebugString();
 }
 
 void Model::RemoveNode(std::shared_ptr<Node> node) {
@@ -2495,22 +2500,51 @@ bool Model::ShouldStop(int64_t cpu_budget, int64_t ram_budget,
                        const Model::ModelParameters& buffer_size_parameters,
                        std::shared_ptr<Node> snapshot,
                        bool* cpu_budget_reached) {
+  // if (*cpu_budget_reached) {
+  //    LOG(INFO) << "@ronyw CPU budget reached.";
+  // }
   if (!(*cpu_budget_reached)) {
     // If those essential transformations' parallelism reaches the CPU budget,
     // we will only tune the buffer size parameters in future iterations.
     int64_t model_parallelism = 0;
     for (auto& pair : parallelism_parameters) {
       model_parallelism += std::round(pair.second->value);
+      // LOG(INFO) << "[Gradient Descent] Pair.second name: " << pair.second->name;
+      // LOG(INFO) << "[Gradient Descent] Pair.second value: " << pair.second->value;
     }
     *cpu_budget_reached = (model_parallelism > cpu_budget);
+    if (*cpu_budget_reached) {
+      LOG(INFO) << "[Gradient Descent] CPU budget: " << cpu_budget;
+      LOG(INFO) << "[Gradient Descent] CPU budget reached, current model parallelism: " << model_parallelism;
+    }
   }
 
   bool all_max = AreAllParametersMax(
       *cpu_budget_reached ? buffer_size_parameters : parameters);
+  
+  // @ronyw We will log ram_budget while preventing unnecessary TotalMaximumBufferedBytes calls.
+
+  if (all_max) {
+    if (*cpu_budget_reached) { 
+      LOG(INFO) << "  [Stopping] CPU budget reached and buffer size parameters have reached their maximum values."; 
+    } else {
+      LOG(INFO) << "  [Stopping] All parameters have reached their maximum values."; 
+    } 
+   
+    return true;
+  } else {
+    const double buffered_bytes = TotalMaximumBufferedBytes(snapshot);
+    if (buffered_bytes > ram_budget) {
+      LOG(INFO) << "  [Stopping] RAM budget exceeded. Maximum buffered bytes: "
+                << buffered_bytes;
+    }
+    return buffered_bytes > ram_budget;
+  }
 
   // If all parameters have reached their maximum values or RAM budget is
   // reached, we stop the iterations.
-  return all_max || TotalMaximumBufferedBytes(snapshot) > ram_budget;
+  // return all_max || TotalMaximumBufferedBytes(snapshot) > ram_budget;
+  
 }
 
 // TODO(jsimsa): Add support for tracking and using the model input time.
@@ -2578,15 +2612,18 @@ void Model::OptimizeGradientDescent(
     std::shared_ptr<Node> snapshot,
     const OptimizationParams& optimization_params,
     CancellationManager* cancellation_manager) {
-  VLOG(2) << "Starting optimization of tunable parameters with Gradient "
-             "Descent.";
+  LOG(INFO) << "--- Starting optimization of tunable parameters with Gradient "
+             "Descent. ---";
+  // std::string debugStr = snapshot->DebugString();
+  // LOG(INFO) << "[Gradient Descent] Node debug string: " << debugStr;
   auto parameters = CollectTunableParameters(snapshot);
   if (parameters.empty()) {
-    VLOG(2) << "The Gradient Descent optimization is terminated since no node "
+    LOG(INFO) << "[Gradient Descent] The Gradient Descent optimization is terminated since no node "
                "with tunable parameters has recorded elements.";
     return;
   }
-  VLOG(2) << "Number of tunable parameters: " << parameters.size();
+  LOG(INFO) << "[Gradient Descent] Number of tunable parameters: " << parameters.size();
+
 
   // The vectors of "essential" parallelism parameters and buffer size
   // parameters.
@@ -2740,9 +2777,10 @@ void Model::OptimizeHillClimbHelper(
   } else {
     LOG(INFO) << "@lsf Not updating model because we cannot allocate "
               << TotalMaximumBufferedBytes(snapshot) << " bytes.";
-    LOG(INFO) << "@lsf ram_budget_manager " << ram_budget_manager.DebugString();
   }
+  LOG(INFO) << "@lsf ram_budget_manager " << ram_budget_manager.DebugString();
 }
+
 void Model::RecordIteratorGapTime(uint64_t duration_usec) {
   mutex_lock l(gap_mu_);
   // Drop duration if it is too large.
